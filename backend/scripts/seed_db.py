@@ -4,7 +4,7 @@ Seed the database with demo data from db-init.yaml.
 Usage:
     docker compose exec app python scripts/seed_db.py
 
-Reads backend/docs/db-init.yaml and inserts seed data in FK-safe order.
+Reads docs/backend/db-init.yaml and inserts seed data in FK-safe order.
 Idempotent: skips if the demo project already exists.
 """
 
@@ -49,7 +49,7 @@ TABLE_MODEL_MAP = [
     ("phase_history", PhaseHistory),
 ]
 
-YAML_PATH = Path(__file__).resolve().parent.parent / "docs" / "db-init.yaml"
+YAML_PATH = Path(__file__).resolve().parent.parent.parent / "docs" / "backend" / "db-init.yaml"
 
 DEMO_PROJECT_ID = UUID("550e8400-e29b-41d4-a716-446655440001")
 
