@@ -1,0 +1,238 @@
+<mxfile host="app.diagrams.net" version="24.0.0" type="device">
+  <diagram id="erd-brd-pipeline" name="BRD Pipeline ERD">
+    <mxGraphModel dx="1422" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== TITLE ==================== -->
+        <mxCell id="title" value="BRD Pipeline — Entity Relationship Diagram" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=22;fontStyle=1;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="800" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="PostgreSQL · Async SQLAlchemy · UUID Primary Keys · JSONB Fields" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=12;fontColor=#64748b;" vertex="1" parent="1">
+          <mxGeometry x="400" y="55" width="800" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== GROUP: CORE (Purple) ==================== -->
+        <mxCell id="group-core" value="Core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#7c3aed;strokeWidth=2;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#7c3aed;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="420" height="310" as="geometry" />
+        </mxCell>
+
+        <!-- projects -->
+        <mxCell id="projects" value="&lt;b style='font-size:13px;color:#7c3aed'&gt;projects&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;name : VARCHAR(255)&lt;br&gt;description : TEXT&lt;br&gt;status : VARCHAR(30)&lt;br&gt;current_phase : INTEGER&lt;br&gt;file_path : VARCHAR(500)&lt;br&gt;file_name : VARCHAR(255)&lt;br&gt;raw_text : TEXT&lt;br&gt;brd_version : INTEGER&lt;br&gt;brd_source : VARCHAR(30)&lt;br&gt;created_at : TIMESTAMPTZ&lt;br&gt;updated_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#7c3aed;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="130" width="200" height="265" as="geometry" />
+        </mxCell>
+
+        <!-- project_configs -->
+        <mxCell id="project_configs" value="&lt;b style='font-size:13px;color:#7c3aed'&gt;project_configs&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK, UQ)&lt;br&gt;db_url : VARCHAR(1000)&lt;br&gt;dbt_project_dir : VARCHAR(500)&lt;br&gt;gx_context_dir : VARCHAR(500)&lt;br&gt;extra : JSONB&lt;br&gt;azure_wiki_org : VARCHAR(255)&lt;br&gt;azure_wiki_project : VARCHAR(255)&lt;br&gt;azure_wiki_name : VARCHAR(255)&lt;br&gt;azure_wiki_pat : VARCHAR(500)&lt;br&gt;created_at : TIMESTAMPTZ&lt;br&gt;updated_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#7c3aed;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="440" width="200" height="265" as="geometry" />
+        </mxCell>
+
+        <!-- projects -> project_configs (1:1) -->
+        <mxCell id="fk-proj-config" value="1:1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="project_configs" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== GROUP: DOCUMENT PROCESSING (Orange) ==================== -->
+        <mxCell id="group-doc" value="Document Processing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#ea580c;strokeWidth=2;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#ea580c;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="520" y="100" width="480" height="620" as="geometry" />
+        </mxCell>
+
+        <!-- brd_chunks -->
+        <mxCell id="brd_chunks" value="&lt;b style='font-size:13px;color:#ea580c'&gt;brd_chunks&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;section_title : VARCHAR(500)&lt;br&gt;section_type : VARCHAR(100)&lt;br&gt;content : TEXT&lt;br&gt;order_index : INTEGER&lt;br&gt;metadata : JSONB&lt;br&gt;cross_references : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="540" y="130" width="210" height="215" as="geometry" />
+        </mxCell>
+
+        <!-- clarifications -->
+        <mxCell id="clarifications" value="&lt;b style='font-size:13px;color:#ea580c'&gt;clarifications&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;chunk_id : UUID (FK, nullable)&lt;br&gt;question : TEXT&lt;br&gt;category : VARCHAR(100)&lt;br&gt;severity : VARCHAR(30)&lt;br&gt;answer : TEXT&lt;br&gt;context : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="775" y="130" width="210" height="215" as="geometry" />
+        </mxCell>
+
+        <!-- requirements -->
+        <mxCell id="requirements" value="&lt;b style='font-size:13px;color:#ea580c'&gt;requirements&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;chunk_id : UUID (FK, nullable)&lt;br&gt;requirement_id : VARCHAR(50)&lt;br&gt;title : VARCHAR(500)&lt;br&gt;description : TEXT&lt;br&gt;priority : VARCHAR(30)&lt;br&gt;business_rules : JSONB&lt;br&gt;kpis : JSONB&lt;br&gt;data_elements : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="620" y="390" width="210" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- brd_chunks -> clarifications (SET NULL) -->
+        <mxCell id="fk-chunk-clar" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#ea580c;strokeWidth=1;dashed=1;fontSize=11;fontStyle=1;fontColor=#ea580c;" edge="1" source="brd_chunks" target="clarifications" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- brd_chunks -> requirements (SET NULL) -->
+        <mxCell id="fk-chunk-req" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#ea580c;strokeWidth=1;dashed=1;fontSize=11;fontStyle=1;fontColor=#ea580c;" edge="1" source="brd_chunks" target="requirements" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- projects -> brd_chunks -->
+        <mxCell id="fk-proj-chunks" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="brd_chunks" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- projects -> clarifications -->
+        <mxCell id="fk-proj-clar" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="clarifications" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="223" />
+              <mxPoint x="500" y="281" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- projects -> requirements -->
+        <mxCell id="fk-proj-req" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="requirements" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="263" />
+              <mxPoint x="480" y="462" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== GROUP: TEST PIPELINE (Blue) ==================== -->
+        <mxCell id="group-test" value="Test Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#2563eb;strokeWidth=2;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#2563eb;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="100" width="500" height="620" as="geometry" />
+        </mxCell>
+
+        <!-- test_category_mappings -->
+        <mxCell id="test_category_mappings" value="&lt;b style='font-size:13px;color:#2563eb'&gt;test_category_mappings&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;requirement_id : UUID (FK, nullable)&lt;br&gt;test_category : VARCHAR(50)&lt;br&gt;sub_category : VARCHAR(100)&lt;br&gt;rationale : TEXT&lt;br&gt;confidence : FLOAT&lt;br&gt;pipeline_layer : VARCHAR(50)&lt;br&gt;tool_suggestion : VARCHAR(100)&lt;br&gt;domain : VARCHAR(50)&lt;br&gt;metadata : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="130" width="220" height="265" as="geometry" />
+        </mxCell>
+
+        <!-- test_cases -->
+        <mxCell id="test_cases" value="&lt;b style='font-size:13px;color:#2563eb'&gt;test_cases&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;category_map_id : UUID (FK, nullable)&lt;br&gt;test_id : VARCHAR(50)&lt;br&gt;title : VARCHAR(500)&lt;br&gt;description : TEXT&lt;br&gt;test_category : VARCHAR(50)&lt;br&gt;pipeline_layer : VARCHAR(50)&lt;br&gt;tool : VARCHAR(100)&lt;br&gt;sql_logic : TEXT&lt;br&gt;severity : VARCHAR(30)&lt;br&gt;priority : INTEGER&lt;br&gt;is_active : BOOLEAN&lt;br&gt;domain : VARCHAR(50)&lt;br&gt;source : VARCHAR(30)&lt;br&gt;tags : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;br&gt;updated_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="130" width="220" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- test_executions -->
+        <mxCell id="test_executions" value="&lt;b style='font-size:13px;color:#2563eb'&gt;test_executions&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;status : VARCHAR(30)&lt;br&gt;triggered_by : VARCHAR(50)&lt;br&gt;total_tests : INTEGER&lt;br&gt;passed / failed / errors / skipped&lt;br&gt;duration_ms : INTEGER&lt;br&gt;config : JSONB&lt;br&gt;started_at : TIMESTAMPTZ&lt;br&gt;finished_at : TIMESTAMPTZ&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="440" width="220" height="250" as="geometry" />
+        </mxCell>
+
+        <!-- test_results -->
+        <mxCell id="test_results" value="&lt;b style='font-size:13px;color:#2563eb'&gt;test_results&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;execution_id : UUID (FK)&lt;br&gt;test_case_id : UUID (FK)&lt;br&gt;status : VARCHAR(20)&lt;br&gt;result : VARCHAR(20)&lt;br&gt;executor_type : VARCHAR(30)&lt;br&gt;actual_output : JSONB&lt;br&gt;error_message : VARCHAR(2000)&lt;br&gt;rows_scanned / rows_failed&lt;br&gt;duration_ms : INTEGER&lt;br&gt;sql_executed : VARCHAR(5000)&lt;br&gt;logs : JSONB&lt;br&gt;started_at : TIMESTAMPTZ&lt;br&gt;finished_at : TIMESTAMPTZ&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="540" width="220" height="310" as="geometry" />
+        </mxCell>
+
+        <!-- requirements -> test_category_mappings (SET NULL) -->
+        <mxCell id="fk-req-tcm" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#ea580c;strokeWidth=1;dashed=1;fontSize=11;fontStyle=1;fontColor=#ea580c;" edge="1" source="requirements" target="test_category_mappings" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- test_category_mappings -> test_cases (SET NULL) -->
+        <mxCell id="fk-tcm-tc" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;strokeColor=#2563eb;strokeWidth=1;dashed=1;fontSize=11;fontStyle=1;fontColor=#2563eb;" edge="1" source="test_category_mappings" target="test_cases" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- test_executions -> test_results (CASCADE) -->
+        <mxCell id="fk-exec-results" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#2563eb;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#2563eb;" edge="1" source="test_executions" target="test_results" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- test_cases -> test_results (CASCADE) -->
+        <mxCell id="fk-tc-results" value="N:1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#2563eb;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#2563eb;" edge="1" source="test_cases" target="test_results" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- projects -> test_category_mappings -->
+        <mxCell id="fk-proj-tcm" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.6;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=1;dashed=0;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="test_category_mappings" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="289" />
+              <mxPoint x="460" y="800" />
+              <mxPoint x="1050" y="800" />
+              <mxPoint x="1050" y="316" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== GROUP: AUDIT (Green) ==================== -->
+        <mxCell id="group-audit" value="Audit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#16a34a;strokeWidth=2;dashed=1;verticalAlign=top;fontStyle=1;fontSize=13;fontColor=#16a34a;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="750" width="420" height="310" as="geometry" />
+        </mxCell>
+
+        <!-- agent_reviews -->
+        <mxCell id="agent_reviews" value="&lt;b style='font-size:13px;color:#16a34a'&gt;agent_reviews&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;phase_id : INTEGER&lt;br&gt;agent_id : VARCHAR(50)&lt;br&gt;agent_name : VARCHAR(100)&lt;br&gt;role : VARCHAR(20)&lt;br&gt;status : VARCHAR(30)&lt;br&gt;confidence : FLOAT&lt;br&gt;comments : JSONB&lt;br&gt;additions : JSONB&lt;br&gt;consolidation_summary : JSONB&lt;br&gt;revision_round : INTEGER&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#16a34a;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="60" y="780" width="200" height="265" as="geometry" />
+        </mxCell>
+
+        <!-- phase_history -->
+        <mxCell id="phase_history" value="&lt;b style='font-size:13px;color:#16a34a'&gt;phase_history&lt;/b&gt;&lt;hr size='1' style='margin:4px 0'&gt;&lt;div style='text-align:left;font-size:11px;line-height:1.5'&gt;🔑 id : UUID (PK)&lt;br&gt;project_id : UUID (FK)&lt;br&gt;phase_id : INTEGER&lt;br&gt;phase_name : VARCHAR(50)&lt;br&gt;action : VARCHAR(50)&lt;br&gt;user_decision : VARCHAR(30)&lt;br&gt;user_feedback : VARCHAR(2000)&lt;br&gt;revision_round : INTEGER&lt;br&gt;snapshot : JSONB&lt;br&gt;created_at : TIMESTAMPTZ&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#16a34a;strokeWidth=2;verticalAlign=top;arcSize=8;spacingLeft=8;spacingRight=8;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="280" y="780" width="200" height="230" as="geometry" />
+        </mxCell>
+
+        <!-- projects -> agent_reviews -->
+        <mxCell id="fk-proj-reviews" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.8;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="agent_reviews" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="30" y="342" />
+              <mxPoint x="30" y="760" />
+              <mxPoint x="160" y="760" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- projects -> phase_history -->
+        <mxCell id="fk-proj-history" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#7c3aed;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#7c3aed;" edge="1" source="projects" target="phase_history" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="310" y="342" />
+              <mxPoint x="310" y="760" />
+              <mxPoint x="380" y="760" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== LEGEND ==================== -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;strokeWidth=1;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="520" y="870" width="540" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=12;fontColor=#1e293b;" vertex="1" parent="1">
+          <mxGeometry x="535" y="875" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#7c3aed;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="535" y="900" width="20" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-purple-text" value="Core" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="560" y="897" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-orange" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#ea580c;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="630" y="900" width="20" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-orange-text" value="Document Processing" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="655" y="897" width="130" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-blue" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="790" y="900" width="20" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-blue-text" value="Test Pipeline / Execution" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="815" y="897" width="140" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#16a34a;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="960" y="900" width="20" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-green-text" value="Audit" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="985" y="897" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-solid" value="" style="endArrow=classic;html=1;strokeColor=#475569;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="535" y="940" as="sourcePoint" />
+            <mxPoint x="575" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-solid-text" value="CASCADE" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="580" y="930" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-dashed" value="" style="endArrow=classic;html=1;strokeColor=#475569;strokeWidth=1;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="680" y="940" as="sourcePoint" />
+            <mxPoint x="720" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-dashed-text" value="SET NULL" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="725" y="930" width="80" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

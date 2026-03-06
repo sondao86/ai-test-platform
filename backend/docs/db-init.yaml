@@ -1,0 +1,703 @@
+# =============================================================================
+# BRD Pipeline — Database Initialization
+# Schema definition + seed data for development
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SCHEMA DEFINITION
+# Mirrors the current state after all 5 Alembic migrations
+# -----------------------------------------------------------------------------
+schema:
+  database: postgresql
+  driver: asyncpg
+  tables:
+
+    - name: projects
+      description: Root project entity — one BRD analysis pipeline run
+      columns:
+        - { name: id,            type: uuid,          pk: true }
+        - { name: name,          type: varchar(255),   nullable: false }
+        - { name: description,   type: text,           nullable: true }
+        - { name: status,        type: varchar(30),    nullable: false, default: "created" }
+        - { name: current_phase, type: integer,        nullable: false, default: 0 }
+        - { name: file_path,     type: varchar(500),   nullable: true }
+        - { name: file_name,     type: varchar(255),   nullable: true }
+        - { name: raw_text,      type: text,           nullable: true }
+        - { name: brd_version,   type: integer,        nullable: false, default: 1 }
+        - { name: brd_source,    type: varchar(30),    nullable: true,  default: "upload" }
+        - { name: created_at,    type: timestamptz,    nullable: false, server_default: "now()" }
+        - { name: updated_at,    type: timestamptz,    nullable: false, server_default: "now()" }
+      indexes: []
+      foreign_keys: []
+
+    - name: project_configs
+      description: Per-project configuration (1:1 with projects)
+      columns:
+        - { name: id,                  type: uuid,          pk: true }
+        - { name: project_id,          type: uuid,          nullable: false, unique: true }
+        - { name: db_url,              type: varchar(1000),  nullable: true }
+        - { name: dbt_project_dir,     type: varchar(500),   nullable: true }
+        - { name: gx_context_dir,      type: varchar(500),   nullable: true }
+        - { name: extra,               type: jsonb,          nullable: true,  default: "{}" }
+        - { name: azure_wiki_org,      type: varchar(255),   nullable: true }
+        - { name: azure_wiki_project,  type: varchar(255),   nullable: true }
+        - { name: azure_wiki_name,     type: varchar(255),   nullable: true }
+        - { name: azure_wiki_pat,      type: varchar(500),   nullable: true }
+        - { name: created_at,          type: timestamptz,    nullable: false, server_default: "now()" }
+        - { name: updated_at,          type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id, on_delete: cascade }
+
+    - name: brd_chunks
+      description: Phase 1 output — chunked BRD document sections
+      columns:
+        - { name: id,               type: uuid,          pk: true }
+        - { name: project_id,       type: uuid,          nullable: false }
+        - { name: section_title,    type: varchar(500),   nullable: false }
+        - { name: section_type,     type: varchar(100),   nullable: false }
+        - { name: content,          type: text,           nullable: false }
+        - { name: order_index,      type: integer,        nullable: false }
+        - { name: metadata,         type: jsonb,          nullable: true,  default: "{}" }
+        - { name: cross_references, type: jsonb,          nullable: true,  default: "[]" }
+        - { name: created_at,       type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id, on_delete: cascade }
+
+    - name: clarifications
+      description: Phase 2 output — clarification questions for ambiguous BRD sections
+      columns:
+        - { name: id,          type: uuid,          pk: true }
+        - { name: project_id,  type: uuid,          nullable: false }
+        - { name: chunk_id,    type: uuid,          nullable: true }
+        - { name: question,    type: text,          nullable: false }
+        - { name: category,    type: varchar(100),   nullable: false }
+        - { name: severity,    type: varchar(30),    nullable: false, default: "medium" }
+        - { name: answer,      type: text,           nullable: true }
+        - { name: context,     type: jsonb,          nullable: true,  default: "{}" }
+        - { name: created_at,  type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id,    on_delete: cascade }
+        - { column: chunk_id,   references: brd_chunks.id,  on_delete: set_null }
+
+    - name: requirements
+      description: Phase 2 output — structured requirements extracted from BRD
+      columns:
+        - { name: id,              type: uuid,          pk: true }
+        - { name: project_id,      type: uuid,          nullable: false }
+        - { name: chunk_id,        type: uuid,          nullable: true }
+        - { name: requirement_id,  type: varchar(50),    nullable: false }
+        - { name: title,           type: varchar(500),   nullable: false }
+        - { name: description,     type: text,           nullable: false }
+        - { name: priority,        type: varchar(30),    nullable: false, default: "medium" }
+        - { name: business_rules,  type: jsonb,          nullable: true,  default: "[]" }
+        - { name: kpis,            type: jsonb,          nullable: true,  default: "[]" }
+        - { name: data_elements,   type: jsonb,          nullable: true,  default: "[]" }
+        - { name: created_at,      type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id,    on_delete: cascade }
+        - { column: chunk_id,   references: brd_chunks.id,  on_delete: set_null }
+
+    - name: test_category_mappings
+      description: Phase 3 output — maps requirements to test categories, layers, domains
+      columns:
+        - { name: id,              type: uuid,          pk: true }
+        - { name: project_id,      type: uuid,          nullable: false }
+        - { name: requirement_id,  type: uuid,          nullable: true }
+        - { name: test_category,   type: varchar(50),    nullable: false }
+        - { name: sub_category,    type: varchar(100),   nullable: true }
+        - { name: rationale,       type: text,           nullable: false }
+        - { name: confidence,      type: float,          nullable: false, default: 0.0 }
+        - { name: pipeline_layer,  type: varchar(50),    nullable: true }
+        - { name: tool_suggestion, type: varchar(100),   nullable: true }
+        - { name: domain,          type: varchar(50),    nullable: true }
+        - { name: metadata,        type: jsonb,          nullable: true,  default: "{}" }
+        - { name: created_at,      type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id,     references: projects.id,      on_delete: cascade }
+        - { column: requirement_id, references: requirements.id,  on_delete: set_null }
+
+    - name: test_cases
+      description: Phase 4 output — generated test cases with SQL, dbt, GX configs
+      columns:
+        - { name: id,                        type: uuid,          pk: true }
+        - { name: project_id,                type: uuid,          nullable: false }
+        - { name: category_map_id,           type: uuid,          nullable: true }
+        - { name: test_id,                   type: varchar(50),    nullable: false }
+        - { name: title,                     type: varchar(500),   nullable: false }
+        - { name: description,               type: text,           nullable: false }
+        - { name: test_category,             type: varchar(50),    nullable: false }
+        - { name: pipeline_layer,            type: varchar(50),    nullable: false }
+        - { name: tool,                      type: varchar(100),   nullable: false }
+        - { name: sql_logic,                 type: text,           nullable: true }
+        - { name: dbt_test_yaml,             type: text,           nullable: true }
+        - { name: great_expectations_config, type: jsonb,          nullable: true }
+        - { name: input_data,                type: jsonb,          nullable: true }
+        - { name: expected_result,           type: jsonb,          nullable: true }
+        - { name: severity,                  type: varchar(30),    nullable: false, default: "medium" }
+        - { name: priority,                  type: integer,        nullable: false, default: 3 }
+        - { name: sla_seconds,               type: integer,        nullable: true }
+        - { name: tags,                      type: jsonb,          nullable: true,  default: "[]" }
+        - { name: is_active,                 type: boolean,        nullable: false, default: true }
+        - { name: domain,                    type: varchar(50),    nullable: true }
+        - { name: source,                    type: varchar(30),    nullable: false, default: "pipeline" }
+        - { name: created_at,                type: timestamptz,    nullable: false, server_default: "now()" }
+        - { name: updated_at,                type: timestamptz,    nullable: false, server_default: "now()" }
+      indexes:
+        - { name: ix_test_cases_project_active, columns: [project_id, is_active] }
+      foreign_keys:
+        - { column: project_id,      references: projects.id,                on_delete: cascade }
+        - { column: category_map_id, references: test_category_mappings.id,  on_delete: set_null }
+
+    - name: test_executions
+      description: Test execution run container with aggregated results
+      columns:
+        - { name: id,           type: uuid,          pk: true }
+        - { name: project_id,   type: uuid,          nullable: false }
+        - { name: status,       type: varchar(30),    nullable: false, default: "pending" }
+        - { name: triggered_by, type: varchar(50),    nullable: false, default: "user" }
+        - { name: total_tests,  type: integer,        nullable: false, default: 0 }
+        - { name: passed,       type: integer,        nullable: false, default: 0 }
+        - { name: failed,       type: integer,        nullable: false, default: 0 }
+        - { name: errors,       type: integer,        nullable: false, default: 0 }
+        - { name: skipped,      type: integer,        nullable: false, default: 0 }
+        - { name: duration_ms,  type: integer,        nullable: true }
+        - { name: config,       type: jsonb,          nullable: true,  default: "{}" }
+        - { name: started_at,   type: timestamptz,    nullable: true }
+        - { name: finished_at,  type: timestamptz,    nullable: true }
+        - { name: created_at,   type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id, on_delete: cascade }
+
+    - name: test_results
+      description: Individual test result within an execution
+      columns:
+        - { name: id,              type: uuid,          pk: true }
+        - { name: execution_id,    type: uuid,          nullable: false }
+        - { name: test_case_id,    type: uuid,          nullable: false }
+        - { name: status,          type: varchar(20),    nullable: false, default: "pending" }
+        - { name: result,          type: varchar(20),    nullable: true }
+        - { name: executor_type,   type: varchar(30),    nullable: false }
+        - { name: actual_output,   type: jsonb,          nullable: true }
+        - { name: expected_output, type: jsonb,          nullable: true }
+        - { name: error_message,   type: varchar(2000),  nullable: true }
+        - { name: error_detail,    type: jsonb,          nullable: true }
+        - { name: rows_scanned,    type: integer,        nullable: true }
+        - { name: rows_failed,     type: integer,        nullable: true }
+        - { name: duration_ms,     type: integer,        nullable: true }
+        - { name: sql_executed,    type: varchar(5000),  nullable: true }
+        - { name: logs,            type: jsonb,          nullable: true,  default: "[]" }
+        - { name: started_at,      type: timestamptz,    nullable: true }
+        - { name: finished_at,     type: timestamptz,    nullable: true }
+        - { name: created_at,      type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: execution_id,  references: test_executions.id, on_delete: cascade }
+        - { column: test_case_id,  references: test_cases.id,      on_delete: cascade }
+
+    - name: agent_reviews
+      description: Multi-agent review records per phase
+      columns:
+        - { name: id,                      type: uuid,          pk: true }
+        - { name: project_id,              type: uuid,          nullable: false }
+        - { name: phase_id,                type: integer,        nullable: false }
+        - { name: agent_id,                type: varchar(50),    nullable: false }
+        - { name: agent_name,              type: varchar(100),   nullable: false }
+        - { name: role,                    type: varchar(20),    nullable: false }
+        - { name: status,                  type: varchar(30),    nullable: false }
+        - { name: confidence,              type: float,          nullable: true }
+        - { name: comments,                type: jsonb,          nullable: true,  default: "[]" }
+        - { name: additions,               type: jsonb,          nullable: true,  default: "[]" }
+        - { name: consolidation_summary,   type: jsonb,          nullable: true }
+        - { name: revision_round,          type: integer,        nullable: false, default: 1 }
+        - { name: created_at,              type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id, on_delete: cascade }
+
+    - name: phase_history
+      description: Audit trail of phase transitions, decisions, and feedback
+      columns:
+        - { name: id,             type: uuid,          pk: true }
+        - { name: project_id,     type: uuid,          nullable: false }
+        - { name: phase_id,       type: integer,        nullable: false }
+        - { name: phase_name,     type: varchar(50),    nullable: false }
+        - { name: action,         type: varchar(50),    nullable: false }
+        - { name: user_decision,  type: varchar(30),    nullable: true }
+        - { name: user_feedback,  type: varchar(2000),  nullable: true }
+        - { name: revision_round, type: integer,        nullable: false, default: 1 }
+        - { name: snapshot,       type: jsonb,          nullable: true }
+        - { name: created_at,     type: timestamptz,    nullable: false, server_default: "now()" }
+      foreign_keys:
+        - { column: project_id, references: projects.id, on_delete: cascade }
+
+
+# -----------------------------------------------------------------------------
+# SEED DATA
+# One complete demo project that has passed through all 4 pipeline phases.
+# UUIDs use a predictable pattern for easy reference:
+#   550e8400-e29b-41d4-a716-44665544XXXX
+# -----------------------------------------------------------------------------
+seed:
+
+  # ── Project ──────────────────────────────────────────────────────────────
+  projects:
+    - id: "550e8400-e29b-41d4-a716-446655440001"
+      name: "Demo BRD Project"
+      description: "Sample project for development — Customer Data Quality BRD analysis with full pipeline artifacts."
+      status: "completed"
+      current_phase: 4
+      file_path: "./uploads/demo-brd.pdf"
+      file_name: "demo-brd.pdf"
+      raw_text: null
+      brd_version: 1
+      brd_source: "upload"
+
+  # ── Project Config ──────────────────────────────────────────────────────
+  project_configs:
+    - id: "550e8400-e29b-41d4-a716-446655440010"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      db_url: "postgresql://demo:demo@localhost:5432/demo_warehouse"
+      dbt_project_dir: "/opt/dbt/demo_project"
+      gx_context_dir: "/opt/gx/demo_context"
+      extra:
+        environment: "development"
+        warehouse: "snowflake"
+
+  # ── BRD Chunks (Phase 1 output) ─────────────────────────────────────────
+  brd_chunks:
+    - id: "550e8400-e29b-41d4-a716-446655440101"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      section_title: "Executive Summary"
+      section_type: "overview"
+      content: "This document outlines the data quality requirements for the Customer 360 data platform. The platform consolidates customer data from CRM, billing, and support systems into a unified data warehouse."
+      order_index: 0
+      metadata:
+        page_range: [1, 2]
+        word_count: 245
+      cross_references: []
+
+    - id: "550e8400-e29b-41d4-a716-446655440102"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      section_title: "Data Quality Requirements"
+      section_type: "requirements"
+      content: "All customer records must have a valid email address and phone number. Customer IDs must be unique across all source systems. Account balances must reconcile between the CRM and billing systems within a 0.01% tolerance."
+      order_index: 1
+      metadata:
+        page_range: [3, 5]
+        word_count: 512
+      cross_references:
+        - "Executive Summary"
+
+    - id: "550e8400-e29b-41d4-a716-446655440103"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      section_title: "SLA and Freshness"
+      section_type: "non_functional"
+      content: "Customer data must be refreshed daily by 06:00 UTC. Stale data older than 24 hours must trigger an alert. The bronze-to-gold pipeline must complete within 2 hours."
+      order_index: 2
+      metadata:
+        page_range: [6, 7]
+        word_count: 180
+      cross_references:
+        - "Data Quality Requirements"
+
+  # ── Clarifications (Phase 2 output) ─────────────────────────────────────
+  clarifications:
+    - id: "550e8400-e29b-41d4-a716-446655440201"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      chunk_id: "550e8400-e29b-41d4-a716-446655440102"
+      question: "What constitutes a 'valid' email address — syntactic validation only or domain verification?"
+      category: "data_quality"
+      severity: "medium"
+      answer: "Syntactic validation (RFC 5322 format) is sufficient for the bronze layer; domain MX verification applies at the gold layer."
+      context:
+        source_section: "Data Quality Requirements"
+        related_requirement: "REQ-001"
+
+    - id: "550e8400-e29b-41d4-a716-446655440202"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      chunk_id: "550e8400-e29b-41d4-a716-446655440103"
+      question: "Does the 24-hour freshness SLA apply to all tables or only customer-facing dimensions?"
+      category: "freshness"
+      severity: "high"
+      answer: "The 24-hour SLA applies to all customer-facing dimension tables. Staging tables have a 48-hour tolerance."
+      context:
+        source_section: "SLA and Freshness"
+
+  # ── Requirements (Phase 2 output) ───────────────────────────────────────
+  requirements:
+    - id: "550e8400-e29b-41d4-a716-446655440301"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      chunk_id: "550e8400-e29b-41d4-a716-446655440102"
+      requirement_id: "REQ-001"
+      title: "Customer Data Completeness"
+      description: "All customer records must contain a non-null, valid email and phone number."
+      priority: "high"
+      business_rules:
+        - "Email must match RFC 5322 pattern"
+        - "Phone must be E.164 format"
+        - "Both fields are required for gold-layer records"
+      kpis:
+        - "Completeness rate >= 99.5%"
+      data_elements:
+        - "customer_email"
+        - "customer_phone"
+
+    - id: "550e8400-e29b-41d4-a716-446655440302"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      chunk_id: "550e8400-e29b-41d4-a716-446655440102"
+      requirement_id: "REQ-002"
+      title: "Customer ID Uniqueness"
+      description: "Customer IDs must be unique across all source systems after deduplication in the silver layer."
+      priority: "critical"
+      business_rules:
+        - "No duplicate customer_id in dim_customer"
+        - "Merge logic must preserve the earliest created_at"
+      kpis:
+        - "Duplicate rate = 0%"
+      data_elements:
+        - "customer_id"
+
+    - id: "550e8400-e29b-41d4-a716-446655440303"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      chunk_id: "550e8400-e29b-41d4-a716-446655440103"
+      requirement_id: "REQ-003"
+      title: "Data Freshness SLA"
+      description: "Customer dimension tables must be refreshed daily by 06:00 UTC with a maximum staleness of 24 hours."
+      priority: "high"
+      business_rules:
+        - "Pipeline must complete by 06:00 UTC"
+        - "Alert if data age > 24 hours"
+      kpis:
+        - "On-time delivery rate >= 99%"
+      data_elements:
+        - "_loaded_at"
+        - "_updated_at"
+
+  # ── Test Category Mappings (Phase 3 output) ─────────────────────────────
+  test_category_mappings:
+    - id: "550e8400-e29b-41d4-a716-446655440401"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      requirement_id: "550e8400-e29b-41d4-a716-446655440301"
+      test_category: "data_quality"
+      sub_category: "completeness"
+      rationale: "REQ-001 specifies mandatory fields (email, phone) that must be non-null in the gold layer."
+      confidence: 0.95
+      pipeline_layer: "gold"
+      tool_suggestion: "great_expectations"
+      domain: "customer"
+      metadata:
+        requirement_ref: "REQ-001"
+
+    - id: "550e8400-e29b-41d4-a716-446655440402"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      requirement_id: "550e8400-e29b-41d4-a716-446655440302"
+      test_category: "data_quality"
+      sub_category: "uniqueness"
+      rationale: "REQ-002 requires unique customer IDs after deduplication — a classic uniqueness check."
+      confidence: 0.98
+      pipeline_layer: "silver"
+      tool_suggestion: "dbt_test"
+      domain: "customer"
+      metadata:
+        requirement_ref: "REQ-002"
+
+    - id: "550e8400-e29b-41d4-a716-446655440403"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      requirement_id: "550e8400-e29b-41d4-a716-446655440303"
+      test_category: "freshness"
+      sub_category: null
+      rationale: "REQ-003 has explicit SLA for data freshness — needs a timeliness/freshness check."
+      confidence: 0.92
+      pipeline_layer: "gold"
+      tool_suggestion: "dbt_test"
+      domain: "customer"
+      metadata:
+        requirement_ref: "REQ-003"
+
+  # ── Test Cases (Phase 4 output) ─────────────────────────────────────────
+  test_cases:
+    - id: "550e8400-e29b-41d4-a716-446655440501"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      category_map_id: "550e8400-e29b-41d4-a716-446655440401"
+      test_id: "TC-001"
+      title: "Customer email completeness in gold layer"
+      description: "Verify that all records in dim_customer have a non-null email matching RFC 5322 format."
+      test_category: "data_quality"
+      pipeline_layer: "gold"
+      tool: "great_expectations"
+      sql_logic: "SELECT count(*) FROM dim_customer WHERE customer_email IS NULL OR customer_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'"
+      dbt_test_yaml: null
+      great_expectations_config:
+        expectation_type: "expect_column_values_to_not_be_null"
+        kwargs:
+          column: "customer_email"
+      input_data: null
+      expected_result:
+        max_failures: 0
+        threshold_pct: 0.5
+      severity: "high"
+      priority: 1
+      sla_seconds: 300
+      tags:
+        - "domain:customer"
+        - "layer:gold"
+        - "requirement:REQ-001"
+        - "category:data_quality"
+      is_active: true
+      domain: "customer"
+      source: "pipeline"
+
+    - id: "550e8400-e29b-41d4-a716-446655440502"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      category_map_id: "550e8400-e29b-41d4-a716-446655440402"
+      test_id: "TC-002"
+      title: "Customer ID uniqueness in silver layer"
+      description: "Verify that customer_id has no duplicates in the deduplication output table."
+      test_category: "data_quality"
+      pipeline_layer: "silver"
+      tool: "dbt_test"
+      sql_logic: "SELECT customer_id, count(*) FROM stg_customers GROUP BY customer_id HAVING count(*) > 1"
+      dbt_test_yaml: |
+        models:
+          - name: stg_customers
+            columns:
+              - name: customer_id
+                tests:
+                  - unique
+                  - not_null
+      great_expectations_config: null
+      input_data: null
+      expected_result:
+        duplicate_count: 0
+      severity: "critical"
+      priority: 1
+      sla_seconds: 120
+      tags:
+        - "domain:customer"
+        - "layer:silver"
+        - "requirement:REQ-002"
+        - "category:data_quality"
+      is_active: true
+      domain: "customer"
+      source: "pipeline"
+
+    - id: "550e8400-e29b-41d4-a716-446655440503"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      category_map_id: "550e8400-e29b-41d4-a716-446655440403"
+      test_id: "TC-003"
+      title: "Customer data freshness SLA check"
+      description: "Verify that dim_customer was loaded within the last 24 hours."
+      test_category: "freshness"
+      pipeline_layer: "gold"
+      tool: "dbt_test"
+      sql_logic: "SELECT max(_loaded_at) AS latest_load, now() - max(_loaded_at) AS age FROM dim_customer HAVING now() - max(_loaded_at) > interval '24 hours'"
+      dbt_test_yaml: |
+        sources:
+          - name: warehouse
+            freshness:
+              warn_after: {count: 24, period: hour}
+              error_after: {count: 48, period: hour}
+            loaded_at_field: _loaded_at
+            tables:
+              - name: dim_customer
+      great_expectations_config: null
+      input_data: null
+      expected_result:
+        max_age_hours: 24
+      severity: "high"
+      priority: 2
+      sla_seconds: 60
+      tags:
+        - "domain:customer"
+        - "layer:gold"
+        - "requirement:REQ-003"
+        - "category:freshness"
+      is_active: true
+      domain: "customer"
+      source: "pipeline"
+
+  # ── Test Execution ──────────────────────────────────────────────────────
+  test_executions:
+    - id: "550e8400-e29b-41d4-a716-446655440601"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      status: "completed"
+      triggered_by: "user"
+      total_tests: 3
+      passed: 2
+      failed: 1
+      errors: 0
+      skipped: 0
+      duration_ms: 4520
+      config:
+        dry_run: false
+        parallel: true
+      started_at: "2026-03-06T10:00:00Z"
+      finished_at: "2026-03-06T10:00:04.520Z"
+
+  # ── Test Results ────────────────────────────────────────────────────────
+  test_results:
+    - id: "550e8400-e29b-41d4-a716-446655440701"
+      execution_id: "550e8400-e29b-41d4-a716-446655440601"
+      test_case_id: "550e8400-e29b-41d4-a716-446655440501"
+      status: "completed"
+      result: "pass"
+      executor_type: "great_expectations"
+      actual_output:
+        rows_checked: 15420
+        failures: 0
+      expected_output:
+        max_failures: 0
+      error_message: null
+      error_detail: null
+      rows_scanned: 15420
+      rows_failed: 0
+      duration_ms: 1820
+      sql_executed: "SELECT count(*) FROM dim_customer WHERE customer_email IS NULL"
+      logs:
+        - "Starting GX validation for dim_customer.customer_email"
+        - "Validation passed: 0 failures out of 15420 rows"
+      started_at: "2026-03-06T10:00:00Z"
+      finished_at: "2026-03-06T10:00:01.820Z"
+
+    - id: "550e8400-e29b-41d4-a716-446655440702"
+      execution_id: "550e8400-e29b-41d4-a716-446655440601"
+      test_case_id: "550e8400-e29b-41d4-a716-446655440502"
+      status: "completed"
+      result: "pass"
+      executor_type: "dbt_test"
+      actual_output:
+        duplicate_count: 0
+      expected_output:
+        duplicate_count: 0
+      error_message: null
+      error_detail: null
+      rows_scanned: 15420
+      rows_failed: 0
+      duration_ms: 950
+      sql_executed: "SELECT customer_id, count(*) FROM stg_customers GROUP BY customer_id HAVING count(*) > 1"
+      logs:
+        - "Running dbt test: unique_stg_customers_customer_id"
+        - "Test passed: 0 duplicates found"
+      started_at: "2026-03-06T10:00:00Z"
+      finished_at: "2026-03-06T10:00:00.950Z"
+
+    - id: "550e8400-e29b-41d4-a716-446655440703"
+      execution_id: "550e8400-e29b-41d4-a716-446655440601"
+      test_case_id: "550e8400-e29b-41d4-a716-446655440503"
+      status: "completed"
+      result: "fail"
+      executor_type: "dbt_test"
+      actual_output:
+        latest_load: "2026-03-05T04:30:00Z"
+        age_hours: 29.5
+      expected_output:
+        max_age_hours: 24
+      error_message: "Data freshness SLA breached: dim_customer last loaded 29.5 hours ago (threshold: 24h)"
+      error_detail:
+        table: "dim_customer"
+        expected_max_age_hours: 24
+        actual_age_hours: 29.5
+      rows_scanned: 1
+      rows_failed: 1
+      duration_ms: 1750
+      sql_executed: "SELECT max(_loaded_at) AS latest_load, extract(epoch FROM now() - max(_loaded_at))/3600 AS age_hours FROM dim_customer"
+      logs:
+        - "Running dbt source freshness: warehouse.dim_customer"
+        - "FAIL: Data age 29.5h exceeds 24h threshold"
+      started_at: "2026-03-06T10:00:02.770Z"
+      finished_at: "2026-03-06T10:00:04.520Z"
+
+  # ── Agent Reviews ───────────────────────────────────────────────────────
+  agent_reviews:
+    # Phase 1 — Ingest review
+    - id: "550e8400-e29b-41d4-a716-446655440801"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 1
+      agent_id: "business_agent"
+      agent_name: "Business Analyst"
+      role: "primary"
+      status: "approved"
+      confidence: 0.92
+      comments:
+        - { severity: "info", text: "BRD chunked into 3 sections covering executive summary, data quality requirements, and SLA." }
+      additions: []
+      consolidation_summary: null
+      revision_round: 1
+
+    - id: "550e8400-e29b-41d4-a716-446655440802"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 1
+      agent_id: "data_governance_agent"
+      agent_name: "Data Governance"
+      role: "reviewer"
+      status: "approved"
+      confidence: 0.88
+      comments:
+        - { severity: "suggestion", text: "Consider splitting the Data Quality Requirements section further by topic (completeness, uniqueness, reconciliation)." }
+      additions: []
+      consolidation_summary: null
+      revision_round: 1
+
+    # Phase 4 — Generate review
+    - id: "550e8400-e29b-41d4-a716-446655440803"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 4
+      agent_id: "data_engineer_agent"
+      agent_name: "Data Engineer"
+      role: "primary"
+      status: "approved"
+      confidence: 0.94
+      comments:
+        - { severity: "info", text: "Generated 3 test cases covering data quality (completeness, uniqueness) and freshness." }
+      additions: []
+      consolidation_summary:
+        total_test_cases: 3
+        categories: ["data_quality", "freshness"]
+        layers: ["silver", "gold"]
+      revision_round: 1
+
+  # ── Phase History ───────────────────────────────────────────────────────
+  phase_history:
+    - id: "550e8400-e29b-41d4-a716-446655440901"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 1
+      phase_name: "ingest"
+      action: "completed"
+      user_decision: "approved"
+      user_feedback: null
+      revision_round: 1
+      snapshot:
+        chunks_created: 3
+
+    - id: "550e8400-e29b-41d4-a716-446655440902"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 2
+      phase_name: "clarify"
+      action: "completed"
+      user_decision: "approved"
+      user_feedback: "Answers look good, proceed to classification."
+      revision_round: 1
+      snapshot:
+        clarifications_created: 2
+        requirements_created: 3
+
+    - id: "550e8400-e29b-41d4-a716-446655440903"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 3
+      phase_name: "classify"
+      action: "completed"
+      user_decision: "approved"
+      user_feedback: null
+      revision_round: 1
+      snapshot:
+        mappings_created: 3
+
+    - id: "550e8400-e29b-41d4-a716-446655440904"
+      project_id: "550e8400-e29b-41d4-a716-446655440001"
+      phase_id: 4
+      phase_name: "generate"
+      action: "completed"
+      user_decision: "approved"
+      user_feedback: "Test cases are comprehensive. Ready for execution."
+      revision_round: 1
+      snapshot:
+        test_cases_created: 3
+        categories: ["data_quality", "freshness"]
